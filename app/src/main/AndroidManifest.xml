@@ -17,6 +17,18 @@
         android:theme="@style/Theme.Taller3firebase"
         tools:targetApi="31">
         <activity
+            android:name=".MapaActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ListaUsuarioActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ModificarActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MainActivity2"
+            android:exported="false" />
+        <activity
             android:name=".HomeActivity"
             android:exported="false" />
         <activity

@@ -88,6 +88,7 @@ class CrearCuentaActivity : AppCompatActivity() {
         val identificacion = binding.idNum.text.toString()
         val lat = latEdit.text.toString()
         val long = longEdit.text.toString()
+        val disp = true
 
         if (name.isEmpty() || apellido.isEmpty() || identificacion.isEmpty() || lat.isEmpty() || long.isEmpty()) {
             Toast.makeText(this, "Please fill out all fields", Toast.LENGTH_SHORT).show()
@@ -110,6 +111,7 @@ class CrearCuentaActivity : AppCompatActivity() {
                     "identification" to identificacion,
                     "latitude" to lat,
                     "longitude" to long,
+                    "disp" to disp,
                 )
                 database.child(userId).setValue(userInfo).addOnCompleteListener {
                     Toast.makeText(

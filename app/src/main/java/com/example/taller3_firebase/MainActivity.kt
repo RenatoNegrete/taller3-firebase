@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateUI(currentUser: FirebaseUser?) {
         if (currentUser != null) {
-            val intent = Intent(baseContext, HomeActivity::class.java)
+            val intent = Intent(baseContext, MainActivity2::class.java)
             intent.putExtra("user", currentUser.email)
             startActivity(intent)
         } else {

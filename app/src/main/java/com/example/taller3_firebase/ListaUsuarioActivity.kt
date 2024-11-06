@@ -4,6 +4,7 @@ import UsuarioAdapter
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.taller3_firebase.HomeActivity
@@ -14,8 +15,7 @@ import com.google.firebase.database.*
 class ListaUsuarioActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityListaUsuarioBinding
-    private lateinit var database: FirebaseDatabase
-    private lateinit var usuarioAdapter: UsuarioAdapter
+    private lateinit var databaseRef: DatabaseReference
     private val listaUsuariosDisponibles = mutableListOf<Usuario>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,38 +23,41 @@ class ListaUsuarioActivity : AppCompatActivity() {
         binding = ActivityListaUsuarioBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        database = FirebaseDatabase.getInstance()
-        usuarioAdapter = UsuarioAdapter(listaUsuariosDisponibles) { usuario ->
-            val intent = Intent(this, HomeActivity::class.java)
-            intent.putExtra("nombre", usuario.nombre)
-            intent.putExtra("correo", usuario.correo)
-            intent.putExtra("disponible", usuario.disponible)
+        databaseRef = FirebaseDatabase.getInstance().getReference("users")
+
+        listarUsuarios()
+
+        val adapter = UsuarioAdapter(this, listaUsuariosDisponibles)
+        binding.listView.adapter = adapter
+
+        binding.back.setOnClickListener {
+            val intent = Intent(this, MainActivity2::class.java)
             startActivity(intent)
         }
-
-        binding.recyclerViewUsuarios.layoutManager = LinearLayoutManager(this)
-        binding.recyclerViewUsuarios.adapter = usuarioAdapter
-
-        cargarUsuariosDisponibles()
     }
 
-    private fun cargarUsuariosDisponibles() {
-        val usuariosRef = database.getReference("usuarios")
-
-        usuariosRef.addValueEventListener(object : ValueEventListener {
+    private fun listarUsuarios() {
+        // Lee los datos de la base de datos
+        databaseRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 listaUsuariosDisponibles.clear()
-                for (userSnapshot in snapshot.children) {
-                    val usuario = userSnapshot.getValue(Usuario::class.java)
-                    if (usuario != null && usuario.disponible) {
+
+                for (usuarioSnapshot in snapshot.children) {
+                    val name = usuarioSnapshot.child("name").getValue(String::class.java) ?: "Sin nombre"
+                    val correo = usuarioSnapshot.child("email").getValue(String::class.java) ?: "Sin mail"
+                    val disponible = usuarioSnapshot.child("disp").getValue(Boolean::class.java) ?: false
+
+                    if (disponible) {
+                        val usuario = Usuario(name, correo, disponible)
                         listaUsuariosDisponibles.add(usuario)
                     }
                 }
-                usuarioAdapter.notifyDataSetChanged()
+
+                (binding.listView.adapter as UsuarioAdapter).notifyDataSetChanged()
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ListaUsuariosActivity", "Error al cargar usuarios: ${error.message}")
+                Toast.makeText(this@ListaUsuarioActivity, "Error al leer los datos", Toast.LENGTH_SHORT).show()
             }
         })
     }

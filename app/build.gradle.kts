@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation(libs.firebase.storage.ktx)
     implementation(libs.androidx.recyclerview)
+    implementation ("com.google.android.gms:play-services-maps:18.0.2")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -1,16 +1,22 @@
 package com.example.taller3_firebase
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.taller3_firebase.databinding.ActivityMapaBinding
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class MapaActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -31,18 +37,61 @@ class MapaActivity : AppCompatActivity(), OnMapReadyCallback {
 
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance()
-        usuarioLat = intent.getDoubleExtra("usuario_lat", 0.0)
-        usuarioLng = intent.getDoubleExtra("usuario_lng", 0.0)
-        seleccionadoLat = intent.getDoubleExtra("seleccionado_lat", 0.0)
-        seleccionadoLng = intent.getDoubleExtra("seleccionado_lng", 0.0)
 
-        binding.mapView.onCreate(savedInstanceState)
-        binding.mapView.getMapAsync(this)
+        val mailUser = intent.getStringExtra("mail")
+
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        val mapFragment = supportFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment
+        mapFragment.getMapAsync(this)
+
+        retrieveAuthenticatedUserLocation()
+        retrieveSelectedUserLocation(mailUser)
+
+        binding.back.setOnClickListener {
+            val intent = Intent(this, MainActivity2::class.java)
+            startActivity(intent)
+        }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
+    }
 
+    private fun retrieveAuthenticatedUserLocation() {
+        val userId = auth.currentUser?.uid ?: return
+        val userRef = database.getReference("users").child(userId)
+
+        userRef.child("latitude").get().addOnSuccessListener { latSnapshot ->
+            userRef.child("longitude").get().addOnSuccessListener { lngSnapshot ->
+                usuarioLat = latSnapshot.getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
+                usuarioLng = lngSnapshot.getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
+                addAuthenticatedUserMarker()
+            }
+        }
+    }
+
+    private fun retrieveSelectedUserLocation(email: String?) {
+        if (email.isNullOrEmpty()) return
+
+        database.getReference("users").orderByChild("email").equalTo(email)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    for (userSnapshot in snapshot.children) {
+                        seleccionadoLat = userSnapshot.child("latitude").getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
+                        seleccionadoLng = userSnapshot.child("longitude").getValue(String::class.java)?.toDoubleOrNull() ?: 0.0
+                        addSelectedUserMarker()
+                        break
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Toast.makeText(this@MapaActivity, "Error retrieving selected user location", Toast.LENGTH_SHORT).show()
+                }
+            })
+    }
+
+    private fun addAuthenticatedUserMarker() {
         val usuarioPosition = LatLng(usuarioLat, usuarioLng)
         map.addMarker(
             MarkerOptions()
@@ -50,7 +99,10 @@ class MapaActivity : AppCompatActivity(), OnMapReadyCallback {
                 .title("Tú (Usuario autenticado)")
                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
         )
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(usuarioPosition, 7f))
+    }
 
+    private fun addSelectedUserMarker() {
         val seleccionadoPosition = LatLng(seleccionadoLat, seleccionadoLng)
         map.addMarker(
             MarkerOptions()
@@ -58,26 +110,5 @@ class MapaActivity : AppCompatActivity(), OnMapReadyCallback {
                 .title("Usuario seleccionado")
                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
         )
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(usuarioPosition, 10f))
-    }
-
-    override fun onResume() {
-        super.onResume()
-        binding.mapView.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        binding.mapView.onPause()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        binding.mapView.onDestroy()
-    }
-
-    override fun onLowMemory() {
-        super.onLowMemory()
-        binding.mapView.onLowMemory()
     }
 }

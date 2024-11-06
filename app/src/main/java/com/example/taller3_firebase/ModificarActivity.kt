@@ -59,26 +59,28 @@ class ModificarActivity : AppCompatActivity() {
         val identificacion = binding.etNumeroIdentificacion.text.toString()
         val correo = binding.etCorreo.text.toString()
         val contrasena = binding.etContrasena.text.toString()
-        val latitud = binding.etLatitud.text.toString().toDoubleOrNull()
-        val longitud = binding.etLongitud.text.toString().toDoubleOrNull()
+        val latitud = binding.etLatitud.text.toString()
+        val longitud = binding.etLongitud.text.toString()
 
         val userId = auth.currentUser?.uid ?: return
-        val userRef = database.getReference("usuarios").child(userId)
+        val userRef = database.getReference("users").child(userId)
 
-        val updates = mutableMapOf<String, Any?>(
-            "nombre" to nombre,
-            "apellido" to apellido,
-            "identificacion" to identificacion,
-            "correo" to correo,
-            "latitud" to latitud,
-            "longitud" to longitud
-        )
-        val currentUser: FirebaseUser? = auth.currentUser
-        currentUser?.let {
-            if (correo.isNotEmpty()) it.updateEmail(correo)
-            if (contrasena.isNotEmpty()) it.updatePassword(contrasena)
+        // Create updates map but only add non-empty or non-null fields
+        val updates = mutableMapOf<String, Any?>()
+        if (nombre.isNotEmpty()) updates["name"] = nombre
+        if (apellido.isNotEmpty()) updates["lastname"] = apellido
+        if (identificacion.isNotEmpty()) updates["identification"] = identificacion
+        if (correo.isNotEmpty()) updates["email"] = correo
+        if (latitud != null) updates["latitude"] = latitud
+        if (longitud != null) updates["longitude"] = longitud
+
+        // Update email and password in FirebaseAuth if they are not empty
+        auth.currentUser?.let { currentUser ->
+            if (correo.isNotEmpty()) currentUser.updateEmail(correo)
+            if (contrasena.isNotEmpty()) currentUser.updatePassword(contrasena)
         }
 
+        // Upload image if selected, else proceed with data update
         selectedImageUri?.let { uri ->
             val storageRef = storage.reference.child("imagenes/$userId.jpg")
             storageRef.putFile(uri).addOnSuccessListener {

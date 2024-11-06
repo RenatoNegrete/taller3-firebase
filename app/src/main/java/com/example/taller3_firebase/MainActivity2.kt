@@ -56,11 +56,11 @@ class MainActivity2 : AppCompatActivity() {
     private fun cambiarDisponibilidad() {
         val userId = auth.currentUser?.uid ?: return
 
-        val userRef = database.getReference("usuarios").child(userId)
+        val userRef = database.getReference("users").child(userId)
 
-        userRef.child("disponible").get().addOnSuccessListener { snapshot ->
+        userRef.child("disp").get().addOnSuccessListener { snapshot ->
             val disponible = snapshot.value as? Boolean ?: false
-            userRef.child("disponible").setValue(!disponible)
+            userRef.child("disp").setValue(!disponible)
                 .addOnSuccessListener {
                     Toast.makeText(this, "Disponibilidad actualizada a ${!disponible}", Toast.LENGTH_SHORT).show()
                 }
